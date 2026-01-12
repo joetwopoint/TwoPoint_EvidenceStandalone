@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Evidence</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="labPill" class="pill off" style="display:none;">Not in Lab</div>
+
+  <div id="app" class="app" style="display:none;">
+    <header class="topbar">
+      <div class="title">Evidence Bags</div>
+      <div class="right">
+        <button id="refreshBtn" class="btn">Refresh</button>
+        <button id="closeBtn" class="btn danger">Close</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <aside class="sidebar">
+        <div class="hint">Select a bag to view details.</div>
+        <div id="bagList" class="list"></div>
+      </aside>
+
+      <section class="content">
+        <div id="detail" class="detail">
+          <div class="empty">No bag selected.</div>
+        </div>
+
+        <div class="actions">
+          <button id="viewBtn" class="btn" disabled>View</button>
+          <button id="analyzeBtn" class="btn" disabled>Analyze (Lab)</button>
+          <button id="deleteBtn" class="btn danger" disabled>Delete (Lab)</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
