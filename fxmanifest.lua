@@ -2,14 +2,10 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
+name 'TwoPoint_EvidenceStandalone'
 author 'TwoPoint Development'
-description 'Standalone evidence + forensic system (SQL only, pe-core compatible)'
-version '1.1.0'
-
-dependencies {
-  '/onesync',
-  'oxmysql'
-}
+description 'Standalone forensics/evidence system (SQL-only) with labs, blips, BigDaddy Chat name sync, and LB-Phone wiretap.'
+version '1.0.0'
 
 shared_scripts {
   'config.lua'
@@ -17,7 +13,8 @@ shared_scripts {
 
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
-  'server/main.lua'
+  'server/main.lua',
+  'server/wiretap.lua'
 }
 
 client_scripts {

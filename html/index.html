@@ -3,39 +3,70 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Evidence</title>
+  <title>TwoPoint Evidence</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="labPill" class="pill off" style="display:none;">Not in Lab</div>
+  <div id="app" class="app hidden">
+    <div class="header">
+      <div class="title">TwoPoint Forensics</div>
+      <div id="labPill" class="pill out">Not in Lab</div>
+      <button id="closeBtn" class="close">×</button>
+    </div>
 
-  <div id="app" class="app" style="display:none;">
-    <header class="topbar">
-      <div class="title">Evidence Bags</div>
-      <div class="right">
-        <button id="refreshBtn" class="btn">Refresh</button>
-        <button id="closeBtn" class="btn danger">Close</button>
+    <div class="tabs">
+      <button class="tab active" data-tab="bags">Evidence Bags</button>
+      <button class="tab" data-tab="wiretap">Wiretap</button>
+    </div>
+
+    <div id="tab-bags" class="panel active">
+      <div class="toolbar">
+        <button id="refreshBags" class="btn">Refresh</button>
       </div>
-    </header>
+      <div class="grid">
+        <div class="list">
+          <div class="listHeader">Bags</div>
+          <div id="bagsList" class="listBody"></div>
+        </div>
+        <div class="details">
+          <div class="listHeader">Details</div>
+          <pre id="bagDetails" class="pre"></pre>
+          <div class="actions">
+            <button id="viewBtn" class="btn">View</button>
+            <button id="analyzeBtn" class="btn">Analyze (Lab)</button>
+            <button id="deleteBtn" class="btn danger">Delete (Lab)</button>
+          </div>
+          <div id="bagErr" class="err"></div>
+        </div>
+      </div>
+    </div>
 
-    <main class="main">
-      <aside class="sidebar">
-        <div class="hint">Select a bag to view details.</div>
-        <div id="bagList" class="list"></div>
-      </aside>
+    <div id="tab-wiretap" class="panel">
+      <div class="toolbar">
+        <button id="refreshWiretap" class="btn">Refresh</button>
+      </div>
 
-      <section class="content">
-        <div id="detail" class="detail">
-          <div class="empty">No bag selected.</div>
+      <div class="grid">
+        <div class="list">
+          <div class="listHeader">Tapped Numbers</div>
+          <div class="wiretapAdd">
+            <input id="tapNumber" placeholder="Phone number" />
+            <input id="tapLabel" placeholder="Label (optional)" />
+            <button id="tapAddBtn" class="btn">Add</button>
+          </div>
+          <div id="tapList" class="listBody"></div>
         </div>
 
-        <div class="actions">
-          <button id="viewBtn" class="btn" disabled>View</button>
-          <button id="analyzeBtn" class="btn" disabled>Analyze (Lab)</button>
-          <button id="deleteBtn" class="btn danger" disabled>Delete (Lab)</button>
+        <div class="details">
+          <div class="listHeader">Active Calls</div>
+          <div id="callsList" class="listBody"></div>
+
+          <div class="listHeader" style="margin-top:10px;">Recent Alerts</div>
+          <div id="alertsList" class="listBody"></div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
+
   </div>
 
   <script src="app.js"></script>

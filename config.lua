@@ -1,119 +1,156 @@
 Config = {}
 
--- Permissions
--- You can allow these nodes to your DiscordAcePerms groups (group.LEO etc)
-Config.AceNode = 'twopoint.evidence' -- allow this to group.LEO via DiscordAcePerms
+-- =========================================================
+-- Core / Permissions
+-- =========================================================
+Config.Debug = false
 
+-- Single node for everything (you'll give this to group.LEO via DiscordAcePerms):
+--   add_ace group.LEO twopoint.evidence allow
+Config.AcePermission = "twopoint.evidence"
 
--- Duty gating (PoliceEMSActivity_patched exports/statebags)
+-- Duty requirement (PoliceEMSActivity patched export)
 Config.RequireOnDuty = true
-Config.DutyResource = "PoliceEMSActivity" -- resource name for exports
+Config.DutyResource = "PoliceEMSActivity" -- exports[res]:IsOnDuty(src)
 
--- Lab locations (multiple). Analyze/Delete only works while inside a lab radius.
-Config.Labs = {
-  -- Police Stations (GTA V)
-  { label = 'Mission Row PD Forensics',      coords = vector3(450.07,  -993.06, 30.00), radius = 30.0, category = 'POLICE' },
-  { label = 'Davis PD Forensics',            coords = vector3(360.97, -1584.70, 29.29), radius = 30.0, category = 'POLICE' },
-  { label = 'Vespucci PD Forensics',         coords = vector3(-1108.18, -845.18, 19.32), radius = 30.0, category = 'POLICE' },
-  { label = 'Rockford Hills PD Forensics',   coords = vector3(-561.65,  -131.65, 38.21), radius = 30.0, category = 'POLICE' },
-  { label = 'Vinewood PD Forensics',         coords = vector3(638.50,     1.75, 82.80),  radius = 30.0, category = 'POLICE' },
-  { label = 'La Mesa PD Forensics',          coords = vector3(826.80, -1290.00, 28.24),  radius = 30.0, category = 'POLICE' },
-  { label = 'Sandy Shores SO Forensics',     coords = vector3(1848.73, 3689.98, 34.27),  radius = 30.0, category = 'POLICE' },
-  { label = 'Paleto Bay SO Forensics',       coords = vector3(-448.22, 6008.23, 31.72),  radius = 30.0, category = 'POLICE' },
+-- BigDaddy Chat integration (for /chatname)
+Config.BigDaddyChatResource = "BigDaddy-Chat"
+Config.NameSyncIntervalSeconds = 10
 
-  -- Police / Law Enforcement extras (toggle off if you don't want these)
-  { label = 'Bolingbroke Forensics',         coords = vector3(1846.49, 2585.95, 45.67),  radius = 35.0, category = 'POLICE', enabled = true },
-  { label = 'Ranger Station Forensics',      coords = vector3(379.31,   792.06, 190.41), radius = 35.0, category = 'POLICE', enabled = true },
-  { label = 'LSIA Field Office Forensics',   coords = vector3(-864.61,-2408.92, 14.03),  radius = 35.0, category = 'POLICE', enabled = true },
+-- LB Phone integration for wiretap (optional)
+Config.LBPhoneResource = "lb-phone"
 
-  -- Hospitals / Medical Facilities
-  { label = 'Pillbox Hill Medical Lab',              coords = vector3(319.20,  -580.80, 43.32), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Central LS Medical Lab',                coords = vector3(338.80, -1394.50, 31.50), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Mount Zonah Medical Lab',               coords = vector3(-449.80,  -341.00, 33.70), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Portola Trinity Medical Lab',           coords = vector3(-874.70,  -307.50, 38.50), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Eclipse Medical Tower Lab',             coords = vector3(-676.70,   311.50, 82.50), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'St Fiacre Medical Lab',                 coords = vector3(1152.20, -1528.00, 34.80), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Sandy Shores Medical Lab',              coords = vector3(1839.50,  3672.50, 33.20), radius = 35.0, category = 'HOSPITAL' },
-  { label = 'Paleto Bay Medical Lab',                coords = vector3(-246.90,  6330.50, 31.40), radius = 35.0, category = 'HOSPITAL' },
+-- =========================================================
+-- Evidence behavior
+-- =========================================================
+Config.ScannerCommand = "forensic"
+Config.OpenUICommand  = "evidence"
+Config.ChatListCommand = "evidencelist"
+
+Config.CollectKey = 38 -- E
+Config.CollectDistance = 2.0
+
+Config.DrawDistance = 40.0
+Config.Marker = { type = 20, scale = 0.20 } -- small marker for scanner mode
+
+-- Cleanup
+Config.DropCleanupSeconds = 60
+Config.MaxActiveDrops = 800 -- safety
+
+-- Rain washing
+Config.RainWashMultiplier = 0.45 -- evidence expires faster when raining (lower = faster)
+
+-- Casings
+Config.Casings = {
+  Enabled = true,
+  BaseChance = 0.75,
+  SilencedChance = 0.20,
+  CooldownMs = 750,
+  TTLSeconds = 45 * 60, -- 45 minutes
 }
 
--- Map blips for labs (configurable)
+-- Blood
+Config.Blood = {
+  Enabled = true,
+  MinHealthDelta = 12,
+  Chance = 0.55,
+  CooldownMs = 30 * 1000,
+  TTLSeconds = 35 * 60,
+}
+
+-- Fingerprints / Touch DNA (vehicle entry)
+Config.Vehicles = {
+  Enabled = true,
+  FingerprintChance_NoGloves = 0.75,
+  FingerprintChance_Gloves   = 0.10,
+  TouchDNAChance_NoGloves    = 0.55,
+  TouchDNAChance_Gloves      = 0.25,
+  CooldownMs = 45 * 1000,
+  TTLSeconds = 60 * 60,
+}
+
+-- Simple glove detection (common approach):
+-- If the player's "arms" component drawable is in this list, treat it as NO gloves.
+-- Otherwise treat as wearing gloves.
+Config.GloveCheck = {
+  Enabled = true,
+  MaleNoGloves = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    30, 31, 32, 33, 34, 35
+  },
+  FemaleNoGloves = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    30, 31, 32, 33, 34, 35
+  }
+}
+
+-- =========================================================
+-- Labs (multiple locations)
+-- Analyze/Delete only works inside one of these radiuses.
+-- NOTE: Coordinates are GTA V vanilla locations (major hospitals & PD stations).
+-- Adjust any that differ for your map.
+-- =========================================================
+Config.Labs = {
+  -- Police Stations
+  { enabled = true, label = "Mission Row PD Forensics", coords = vector3(441.1, -981.9, 30.7), radius = 35.0 },
+  { enabled = true, label = "Vespucci PD Forensics",   coords = vector3(-1082.2, -823.1, 19.3), radius = 35.0 },
+  { enabled = true, label = "Davis PD Forensics",      coords = vector3(373.7, -1608.4, 29.3), radius = 35.0 },
+  { enabled = true, label = "Sandy Shores SO Forensics",coords = vector3(1853.2, 3686.0, 34.2), radius = 45.0 },
+  { enabled = true, label = "Paleto Bay SO Forensics", coords = vector3(-449.7, 6015.0, 31.7), radius = 45.0 },
+
+  -- Hospitals / Medical
+  { enabled = true, label = "Pillbox Medical Forensics", coords = vector3(307.6, -1433.1, 29.9), radius = 60.0 },
+  { enabled = true, label = "Mount Zonah Forensics",     coords = vector3(-449.5, -340.9, 34.5), radius = 60.0 },
+  { enabled = true, label = "Central LS Medical Forensics", coords = vector3(340.7, -585.9, 28.8), radius = 60.0 },
+  { enabled = true, label = "Sandy Medical Forensics",   coords = vector3(1839.6, 3672.9, 34.3), radius = 70.0 },
+  { enabled = true, label = "Paleto Clinic Forensics",   coords = vector3(-256.0, 6322.2, 32.4), radius = 70.0 },
+  { enabled = true, label = "St Fiacre Hospital Forensics", coords = vector3(1151.2, -1529.6, 34.9), radius = 60.0 },
+}
+
+-- =========================================================
+-- Blips
+-- =========================================================
 Config.Blips = {
   Enabled = true,
-  ShowToAll = true,         -- if false, only players with Config.AceNode see them
-  ShortRange = true,
+  ShowToAll = true,  -- if false, only players with ACE permission see them
+  Sprite = 361,      -- generic "science/forensics" vibe; change as desired
+  Color = 3,
   Scale = 0.75,
-
-  -- You can override per-lab with lab.blipSprite / lab.blipColor / lab.blipScale / lab.blipShortRange
-  DefaultSprite = 498,      -- "Police Station" style
-  DefaultColor = 3,
-
-  PoliceSprite = 498,
-  PoliceColor  = 29,
-
-  HospitalSprite = 61,
-  HospitalColor  = 2,
-}
-
--- BigDaddy chat integration
-Config.BigDaddyChatResource = "BigDaddy-Chat"
-Config.ChatnameCommand = "chatname"  -- intercept /chatname <name> if chatMessage event fires
-Config.NamePollSeconds = 30          -- fallback polling of BigDaddy chat export
-
--- Evidence generation (client)
-Config.Drop = {
-  ShellCasing = { enabled = true, cooldownMs = 1200, radius = 0.8 }, -- per-shot cooldown
-  Blood       = { enabled = true, healthDelta = 10, cooldownMs = 7000, radius = 0.8 },
-  Fingerprint = { enabled = true, onVehicleEnter = true, cooldownMs = 12000, radius = 1.2 }
-}
-
--- Evidence cleanup
-Config.WorldEvidenceTTLMinutes = 180  -- default/fallback TTL (minutes) if no per-evidence TTL is provided
-
--- Realism tuning (all optional)
-Config.Realism = {
-  -- Shell casings
-  SuppressedShellChance = 0.35, -- if weapon is silenced, chance to still drop a casing
-
-  -- Fingerprints / touch DNA
-  GlovesFingerprintChance = 0.15, -- wearing gloves reduces chance of leaving prints/touch DNA
-
-  -- Weather decay
-  RainDecayMultiplier = 0.60, -- if raining, TTL is multiplied by this number
-
-  -- Per evidence TTL (minutes). Used to compute expires_at in SQL for each drop.
-  TTLByType = {
-    SHELL = 240,
-    BLOOD = 180,
-    FINGERPRINT = 360,
-  }
-
-  -- Optional: better glove detection (expand these lists if you use lots of custom clothing)
-  -- These are "arms" drawable indexes (component 3). The default 15 is commonly bare hands for freemode.
-  ,GloveCheck = {
-    MaleNoGloves = { [15] = true },
-    FemaleNoGloves = { [15] = true },
-    AssumeGlovesForNonFreemode = true,
-  }
-}
-
--- Scanner/collection
-Config.Scanner = {
-  Command = "forensic",
-  CollectKey = 38, -- E
-  MaxDrawDistance = 25.0,
-  CollectDistance = 2.0
-}
-
--- Commands
-Config.Commands = {
-  ui = 'evidence',
-  list = 'evidencelist',
-  view = 'evidenceview',
-  delete = 'evidencedelete',
-  analyze = 'evidenceanalyze'
+  ShortRange = true,
+  LabelPrefix = "Forensics Lab: "
 }
 
 
--- Debug
-Config.Debug = false
+-- =========================================================
+-- Inspect / Cleanup (Civilian)
+-- =========================================================
+-- Allow regular members to inspect for evidence they personally created and attempt cleanup.
+-- Give this to group.member:
+--   add_ace group.member twopoint.evidence.inspect allow
+Config.InspectAcePermission = "twopoint.evidence.inspect"
+
+-- How far the inspect mode searches for your evidence drops (meters)
+Config.InspectRadius = 25.0
+
+-- Cleanup chances (only applied if the minigame is passed)
+Config.CleanupChances = {
+  Full = 0.50,    -- 50% chance to fully remove evidence (hard minigame)
+  Partial = 0.35, -- 35% chance to downgrade evidence to partial (easy minigame)
+}
+
+-- Minigame tuning
+Config.Minigame = {
+  Collect = { keys = 2, totalTime = 4.0 },   -- not too difficult
+  CleanupEasy = { keys = 3, totalTime = 4.5 },
+  CleanupHard = { keys = 6, totalTime = 5.0 },
+}
+
+-- Partial evidence tuning
+Config.Partial = {
+  QualityMin = 30, -- after partial cleanup, quality will be reduced into this range
+  QualityMax = 60,
+}

@@ -1,83 +1,83 @@
-# TwoPoint_EvidenceStandalone
+# TwoPoint Evidence Standalone (SQL-only)
 
-Standalone evidence + forensic system designed for **pe-core** servers using **SQL only** (via `oxmysql`).
-No ox_inventory, no ox_target, no ESX/QB.
+Standalone forensics/evidence system with:
+- Evidence drops (casings, blood, fingerprints, touch DNA)
+- Scanner collection (no inventory items; bags are stored in SQL)
+- Multi-location labs (analyze/delete restricted to labs)
+- Configurable lab blips
+- BigDaddy Chat `/chatname` sync for evidence profile display names
+- LB-Phone wiretap tab (monitors call events; alerts LEOs when tapped numbers are involved)
 
-## Features
-- Automatic evidence drops:
-  - Shell casings when shooting
-  - Blood drops when taking significant damage
-  - Fingerprints when entering a vehicle
-- Officers can toggle a scanner: `/forensic`
-  - Shows nearby evidence markers
-  - Press **E** to collect
-- Collected evidence goes into SQL “bags” (no items needed)
-- Commands:
-  - `/evidence` list your collected bags
-  - `/evidenceview <BagID>` view basic info
-  - `/evidenceanalyze <BagID>` lab-only full analysis (shows fingerprint/DNA + identifier)
-  - `/evidencedelete <BagID>` lab-only delete a bag
-
-## Permissions (DiscordAcePerms / ACE)
-Give your LEO groups these nodes in server.cfg:
-
-```
-add_ace group.LEO twopoint.evidence allow
-```
-
-## Duty requirement (PoliceEMSActivity)
-By default, the script requires players to be **on duty** (PoliceEMSActivity export `IsOnDuty`).
-Toggle in `config.lua`:
-- `Config.RequireOnDuty = true/false`
-
-## BigDaddy Chat integration (/chatname)
-The script stores each player’s **character_name** in `tp_evidence_profiles`.
-
-It updates names:
-1) Immediately when it sees `/chatname <name>` via the `chatMessage` event (best case)
-2) Every `Config.NamePollSeconds` seconds by reading `exports['BigDaddy-Chat']:getPlayerName(src)` (fallback)
-
-If your BigDaddy chat does not fire `chatMessage`, the polling still keeps names synced.
-
-## Database
-Tables auto-create on resource start:
-- `tp_evidence_profiles`
-- `tp_evidence_world`
-- `tp_evidence_bags`
-
-## Install
-1) Ensure dependencies:
-   - `ensure oxmysql`
-2) Add resource folder:
-   - `ensure TwoPoint_EvidenceStandalone`
-3) Configure ACE permissions (above).
-4) Restart.
-
-## Notes
-- World evidence uses `expires_at` in SQL. Each dropped evidence item can pass a per-type TTL (`Config.Realism.TTLByType`) and weather can shorten it (`Config.Realism.RainDecayMultiplier`).
-- This is intentionally lightweight and avoids any inventory/target frameworks.
-
-## Lab locations & blips
-Labs are configured in `config.lua` in `Config.Labs`.
-
-You can show configurable map blips for everyone (or only LEO) via `Config.Blips`:
-- `Enabled`
-- `ShowToAll`
-- `DefaultSprite`, `DefaultColor`, `Scale`, `ShortRange`
-- Optional per-category overrides: `PoliceSprite/Color`, `HospitalSprite/Color`
-
-Per-lab overrides:
-- `enabled = false` to disable that lab
-- `blipSprite`, `blipColor`, `blipScale`, `blipShortRange`, `blipName`
-
-
-## Evidence UI
-- `/evidence` opens the Evidence Bags UI.
-- Top-right pill shows **In Lab** / **Not in Lab** status.
-- Analyze/Delete buttons only work while inside one of the configured lab radii.
+## Dependencies
+- oxmysql
+- PoliceEMSActivity (patched to provide exports:IsOnDuty on server, and statebag `LocalPlayer.state.pea_onDuty`)
+- BigDaddy-Chat (for name sync export `getPlayerName`)
+- lb-phone (optional, for wiretap call events)
 
 ## Permissions
-Add this to your `server.cfg`:
+Give your LEO ACE group access:
 ```
 add_ace group.LEO twopoint.evidence allow
 ```
+
+## Ensure Order
+```
+ensure oxmysql
+ensure PoliceEMSActivity
+ensure BigDaddy-Chat
+ensure lb-phone           # optional
+ensure TwoPoint_EvidenceStandalone
+```
+
+## Commands
+- /forensic : toggle scanner (LEO + duty required)
+- /evidence : open UI (LEO only; analyze/delete requires duty + lab)
+- /evidencelist : chat fallback list of bags
+
+### Wiretap commands (optional)
+These change your tapped numbers and update the laptop UI live (if open).
+- /wiretap add <number> [label]
+- /wiretap remove <number>
+- /wiretap list
+
+## Keybinds & Controls
+- **Collect evidence:** press **E** (default GTA control **38**) while the **Forensic Scanner** is ON and you are within range of evidence.
+- **UI interaction:** mouse click to switch tabs / select bags / add/remove wiretaps / analyze / delete (when allowed).
+- **Close UI:** press **ESC** (or use the UI close button).
+
+**Change the collect key:** edit `Config.CollectKey` in `config.lua` (default `38` = **E**).
+
+## Config
+Edit `config.lua`:
+- `Config.Labs` to change lab locations/radius
+- `Config.Blips` to show labs to everyone or only LEOs
+- Evidence chances/TTLs under `Config.Casings`, `Config.Blood`, `Config.Vehicles`
+- Name sync interval under `Config.NameSyncIntervalSeconds`
+
+## Notes on Realism
+- Suppressors reduce casing drop chance
+- Gloves reduce fingerprint chance (simple drawable-based glove check, configurable)
+- Rain washes evidence faster (`Config.RainWashMultiplier`)
+
+
+## Inspect & Cleanup (Civilians)
+This is for **group.member** (or any group you grant the inspect ACE node to). It lets players inspect for **evidence they personally created** and attempt to clean it up.
+
+### Permission
+Add this to `server.cfg`:
+```
+add_ace group.member twopoint.evidence.inspect allow
+```
+
+### Commands
+- `/inspect` (alias: `/instpect`) — toggle Inspect mode
+
+### Controls (while Inspect mode is ON and near your evidence)
+- **E** — Quick Wipe (easy minigame)  
+  - If you pass the minigame: **35% chance** to downgrade evidence to **partial**.
+- **H** — Thorough Clean (hard minigame)  
+  - If you pass the minigame: **50% chance** to fully remove the evidence.
+  - If you fail the minigame: **nothing changes** (all evidence stays).
+
+### How “partial evidence” affects cops
+Partial evidence is harder to use: it shows a **profile fragment + confidence** instead of full identifying details until more context/evidence is collected.

@@ -1,211 +1,223 @@
 const app = document.getElementById('app');
-const pill = document.getElementById('labPill');
+const labPill = document.getElementById('labPill');
 
-const bagListEl = document.getElementById('bagList');
-const detailEl = document.getElementById('detail');
-
-const refreshBtn = document.getElementById('refreshBtn');
 const closeBtn = document.getElementById('closeBtn');
-
+const refreshBags = document.getElementById('refreshBags');
+const bagsList = document.getElementById('bagsList');
+const bagDetails = document.getElementById('bagDetails');
+const bagErr = document.getElementById('bagErr');
 const viewBtn = document.getElementById('viewBtn');
 const analyzeBtn = document.getElementById('analyzeBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 
-let bags = [];
-let selectedId = null;
-let inLab = false;
-let labLabel = null;
+const refreshWiretap = document.getElementById('refreshWiretap');
+const tapNumber = document.getElementById('tapNumber');
+const tapLabel = document.getElementById('tapLabel');
+const tapAddBtn = document.getElementById('tapAddBtn');
+const tapList = document.getElementById('tapList');
+const callsList = document.getElementById('callsList');
+const alertsList = document.getElementById('alertsList');
 
-function post(name, body = {}) {
-  return fetch(`https://${GetParentResourceName()}/${name}`, {
+let selectedBagId = null;
+let selectedBag = null;
+
+function nui(name, data = {}) {
+  return fetch(`https://TwoPoint_EvidenceStandalone/${name}`, {
     method: 'POST',
-    headers: {'Content-Type':'application/json; charset=UTF-8'},
-    body: JSON.stringify(body)
-  }).then(r => r.json());
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify(data)
+  }).then(r => r.json()).catch(() => ({}));
 }
 
-function fmtTime(ts){
-  if(!ts) return '';
+function setLabPill(inLab, label) {
+  if (inLab) {
+    labPill.classList.remove('out');
+    labPill.classList.add('in');
+    labPill.textContent = label ? `In Lab: ${label}` : 'In Lab';
+  } else {
+    labPill.classList.remove('in');
+    labPill.classList.add('out');
+    labPill.textContent = 'Not in Lab';
+  }
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
   const d = new Date(ts * 1000);
   return d.toLocaleString();
 }
 
-function renderList(){
-  bagListEl.innerHTML = '';
-  if(!bags || bags.length === 0){
-    const div = document.createElement('div');
-    div.className = 'empty';
-    div.textContent = 'No evidence bags found.';
-    bagListEl.appendChild(div);
-    return;
-  }
-
-  for(const b of bags){
-    const item = document.createElement('div');
-    item.className = 'item' + (b.id === selectedId ? ' active' : '');
-    item.onclick = () => selectBag(b.id);
-
-    const row1 = document.createElement('div');
-    row1.className = 'row1';
-
-    const left = document.createElement('div');
-    const label = document.createElement('div');
-    label.className = 'label';
-    label.textContent = `${b.bag_label} (#${b.id})`;
-    const type = document.createElement('div');
-    type.className = 'type';
-    type.textContent = `${b.evidence_type} • Owner: ${b.owner_name || 'Unknown'}`;
-    left.appendChild(label);
-    left.appendChild(type);
-
-    const right = document.createElement('div');
-    right.className = 'meta';
-    right.textContent = fmtTime(b.collected_ts);
-
-    row1.appendChild(left);
-    row1.appendChild(right);
-
-    item.appendChild(row1);
-    bagListEl.appendChild(item);
-  }
+function clearBag() {
+  selectedBagId = null;
+  selectedBag = null;
+  bagDetails.textContent = '';
+  bagErr.textContent = '';
 }
 
-function setButtons(){
-  const hasSel = !!selectedId;
-  viewBtn.disabled = !hasSel;
-  analyzeBtn.disabled = !hasSel || !inLab;
-  deleteBtn.disabled = !hasSel || !inLab;
+function renderBags(bags) {
+  bagsList.innerHTML = '';
+  (bags || []).forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'item' + (b.id === selectedBagId ? ' active' : '');
+    el.innerHTML = `
+      <div><b>#${b.id}</b> <span class="muted">(${b.type})</span></div>
+      <div class="small muted">Collected by: ${b.collected_by || 'Unknown'}</div>
+      <div class="small muted">Analyzed: ${b.analyzed_at ? 'Yes' : 'No'}</div>
+    `;
+    el.onclick = () => {
+      selectedBagId = b.id;
+      document.querySelectorAll('#bagsList .item').forEach(x => x.classList.remove('active'));
+      el.classList.add('active');
+    };
+    bagsList.appendChild(el);
+  });
 }
 
-function setDetailEmpty(){
-  detailEl.innerHTML = '<div class="empty">No bag selected.</div>';
+async function refreshBagsFn() {
+  clearBag();
+  await nui('bags', {});
 }
 
-function setDetail(kvs){
-  detailEl.innerHTML = '';
-  for(const [k,v] of kvs){
-    const row = document.createElement('div');
-    row.className = 'kv';
-    const kk = document.createElement('div');
-    kk.className = 'k';
-    kk.textContent = k;
-    const vv = document.createElement('div');
-    vv.className = 'v';
-    vv.textContent = v ?? '';
-    row.appendChild(kk);
-    row.appendChild(vv);
-    detailEl.appendChild(row);
-  }
+async function viewBagFn() {
+  bagErr.textContent = '';
+  if (!selectedBagId) { bagErr.textContent = 'Select a bag first.'; return; }
+  await nui('viewBag', { bagId: selectedBagId });
 }
 
-function selectBag(id){
-  selectedId = id;
-  renderList();
-  setButtons();
-  setDetailEmpty();
+async function analyzeBagFn() {
+  bagErr.textContent = '';
+  if (!selectedBagId) { bagErr.textContent = 'Select a bag first.'; return; }
+  await nui('analyzeBag', { bagId: selectedBagId });
 }
 
-async function refresh(){
-  const res = await post('tp_evidence_ui_list', {});
-  if(res && res.ok){
-    bags = res.bags || [];
-    // keep selection if still exists
-    if(selectedId && !bags.find(b => b.id === selectedId)){
-      selectedId = null;
-      setDetailEmpty();
-    }
-    renderList();
-    setButtons();
-  }
+async function deleteBagFn() {
+  bagErr.textContent = '';
+  if (!selectedBagId) { bagErr.textContent = 'Select a bag first.'; return; }
+  await nui('deleteBag', { bagId: selectedBagId });
+  await refreshBagsFn();
 }
 
-async function viewSelected(action){
-  if(!selectedId) return;
-  const res = await post(action, { id: selectedId });
-  if(!res || !res.ok){
-    return;
-  }
-
-  const d = res.data || {};
-  const kvs = [];
-
-  if(action === 'tp_evidence_ui_view'){
-    kvs.push(['Bag', `${d.bag_label} (#${selectedId})`]);
-    kvs.push(['Type', d.evidence_type]);
-    kvs.push(['Owner', d.owner_name]);
-    kvs.push(['Weapon', d.weapon || '']);
-    kvs.push(['Serial', d.serial || '']);
-    kvs.push(['Note', d.note || '']);
-    kvs.push(['Scene', `${(d.x||0).toFixed(2)}, ${(d.y||0).toFixed(2)}, ${(d.z||0).toFixed(2)}`]);
-    kvs.push(['Created', d.created_at || '']);
-    kvs.push(['Collected', d.collected_at || '']);
-  } else if(action === 'tp_evidence_ui_analyze'){
-    kvs.push(['Bag', `${d.bag_label} (#${selectedId})`]);
-    kvs.push(['Type', d.evidence_type]);
-    kvs.push(['Owner Identifier', d.owner_identifier || '']);
-    kvs.push(['Owner Name', d.owner_name || '']);
-    kvs.push(['Fingerprint', d.fingerprint || '']);
-    kvs.push(['DNA', d.dna || '']);
-    kvs.push(['Weapon', d.weapon || '']);
-    kvs.push(['Serial', d.serial || '']);
-    kvs.push(['Note', d.note || '']);
-    kvs.push(['Scene', `${(d.x||0).toFixed(2)}, ${(d.y||0).toFixed(2)}, ${(d.z||0).toFixed(2)}`]);
-    kvs.push(['Created', d.created_at || '']);
-    kvs.push(['Collected', d.collected_at || '']);
-  }
-
-  setDetail(kvs);
+function renderTargets(targets) {
+  tapList.innerHTML = '';
+  (targets || []).forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    const label = t.label ? ` - ${t.label}` : '';
+    el.innerHTML = `
+      <div><b>${t.target_number}</b><span class="muted">${label}</span></div>
+      <div class="small muted">Click to remove</div>
+    `;
+    el.onclick = async () => {
+      await nui('wiretapRemove', { number: t.target_number });
+      await refreshWiretapFn();
+    };
+    tapList.appendChild(el);
+  });
 }
 
-async function deleteSelected(){
-  if(!selectedId) return;
-  const res = await post('tp_evidence_ui_delete', { id: selectedId });
-  if(res && res.ok){
-    selectedId = null;
-    setDetailEmpty();
-    await refresh();
-  }
+function renderCalls(calls) {
+  callsList.innerHTML = '';
+  (calls || []).forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <div><b>${c.stage.toUpperCase()}</b> <span class="muted">${c.numbers.join(', ')}</span></div>
+      <div class="small muted">Started: ${fmtTime(c.startedAt)}</div>
+    `;
+    callsList.appendChild(el);
+  });
 }
+
+function renderAlerts(alerts) {
+  alertsList.innerHTML = '';
+  (alerts || []).slice(-30).reverse().forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <div><b>${(a.stage || 'update').toUpperCase()}</b> <span class="muted">${(a.numbers || []).join(', ')}</span></div>
+      <div class="small muted">${fmtTime(a.startedAt || a.answeredAt || a.endedAt)}</div>
+    `;
+    alertsList.appendChild(el);
+  });
+}
+
+async function refreshWiretapFn() {
+  await nui('wiretapState', {});
+}
+
+closeBtn.onclick = async () => {
+  await nui('close', {});
+  app.classList.add('hidden');
+};
+
+refreshBags.onclick = refreshBagsFn;
+viewBtn.onclick = viewBagFn;
+analyzeBtn.onclick = analyzeBagFn;
+deleteBtn.onclick = deleteBagFn;
+
+refreshWiretap.onclick = refreshWiretapFn;
+tapAddBtn.onclick = async () => {
+  const number = (tapNumber.value || '').trim();
+  const label = (tapLabel.value || '').trim();
+  if (!number) return;
+  await nui('wiretapAdd', { number, label });
+  tapNumber.value = '';
+  tapLabel.value = '';
+  await refreshWiretapFn();
+};
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+  };
+});
 
 window.addEventListener('message', (event) => {
   const msg = event.data || {};
-  if(msg.type === 'open'){
-    app.style.display = 'block';
-    pill.style.display = 'block';
-    refresh();
+  if (msg.type === 'open') {
+    app.classList.remove('hidden');
+    refreshBagsFn();
+    refreshWiretapFn();
   }
-  if(msg.type === 'close'){
-    app.style.display = 'none';
-    pill.style.display = 'none';
-    selectedId = null;
-    setDetailEmpty();
-  }
-  if(msg.type === 'labStatus'){
-    inLab = !!msg.inLab;
-    labLabel = msg.label || null;
 
-    if(inLab){
-      pill.classList.remove('off');
-      pill.classList.add('on');
-      pill.textContent = labLabel ? `In Lab: ${labLabel}` : 'In Lab';
-    } else {
-      pill.classList.remove('on');
-      pill.classList.add('off');
-      pill.textContent = 'Not in Lab';
+  if (msg.type === 'labPill') {
+    setLabPill(!!msg.inLab, msg.label || '');
+  }
+
+  if (msg.type === 'uiResponse') {
+    if (!msg.ok) {
+      bagErr.textContent = msg.err || 'Request failed';
+      return;
     }
+    const data = msg.data || {};
+    if (data.bags) renderBags(data.bags);
+    if (data.bag) {
+      selectedBag = data.bag;
+      bagDetails.textContent = JSON.stringify(selectedBag, null, 2);
+    }
+    if (typeof data.inLab === 'boolean') {
+      // server's view, but pill is updated client-side anyway
+    }
+  }
 
-    setButtons();
+  if (msg.type === 'wiretapResp') {
+    if (!msg.ok) return;
+    const data = msg.data || {};
+    renderTargets(data.targets || []);
+    renderCalls(data.calls || []);
+    renderAlerts(data.alerts || []);
+  }
+
+  if (msg.type === 'wiretapAlert') {
+    // live alert
+    refreshWiretapFn();
+  }
+
+  if (msg.type === 'wiretapRefresh') {
+    refreshWiretapFn();
   }
 });
-
-document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){
-    post('tp_evidence_ui_close', {});
-  }
-});
-
-refreshBtn.onclick = () => refresh();
-closeBtn.onclick = () => post('tp_evidence_ui_close', {});
-viewBtn.onclick = () => viewSelected('tp_evidence_ui_view');
-analyzeBtn.onclick = () => viewSelected('tp_evidence_ui_analyze');
-deleteBtn.onclick = () => deleteSelected();
