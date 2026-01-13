@@ -95,9 +95,14 @@ end
 
 local function isOnDuty()
   if not Config.RequireOnDuty then return true end
-  -- Uses the PoliceEMSActivity state bag set by the patched resource:
-  -- LocalPlayer.state.pea_onDuty = true/false
-  return LocalPlayer and LocalPlayer.state and LocalPlayer.state.pea_onDuty == true
+  -- Preferred: PoliceEMSActivity state bag (set by the patched resource)
+  if LocalPlayer and LocalPlayer.state and type(LocalPlayer.state.pea_onDuty) == "boolean" then
+    return LocalPlayer.state.pea_onDuty
+  end
+
+  -- Fallback: if state isn't available (different duty UI / late sync),
+  -- allow client-side interaction and rely on server-side duty enforcement.
+  return true
 end
 
 local function canUse()

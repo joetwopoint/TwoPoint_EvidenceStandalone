@@ -41,10 +41,12 @@ local function hasPerm(src)
   if not IsAceAllowed(src, Config.AcePermission) then return false end
   if Config.RequireOnDuty then
     local res = Config.DutyResource
-    if not resStarted(res) then return false end
+    if not resStarted(res) then dbg('Duty resource not started:', res); return false end
     local ok, onDuty = pcall(function()
       return exports[res]:IsOnDuty(src)
     end)
+    if not ok then dbg('Duty export call failed for', res) end
+    if ok and onDuty ~= true then dbg('Duty export returned false for', src) end
     return ok and onDuty == true
   end
   return true
