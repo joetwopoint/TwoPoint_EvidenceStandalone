@@ -90,23 +90,19 @@ local function runSequenceMinigame(nKeys, totalTime, title)
 end
 
 local function hasAce()
-  return IsAceAllowed(Config.AcePermission)
+  return true -- standalone/no-perms mode
 end
 
 local function isOnDuty()
   if not Config.RequireOnDuty then return true end
-  -- Preferred: PoliceEMSActivity state bag (set by the patched resource)
-  if LocalPlayer and LocalPlayer.state and type(LocalPlayer.state.pea_onDuty) == "boolean" then
-    return LocalPlayer.state.pea_onDuty
-  end
-
-  -- Fallback: if state isn't available (different duty UI / late sync),
-  -- allow client-side interaction and rely on server-side duty enforcement.
-  return true
+  -- Uses the PoliceEMSActivity state bag set by the patched resource:
+  -- LocalPlayer.state.pea_onDuty = true/false
+  return LocalPlayer and LocalPlayer.state and LocalPlayer.state.pea_onDuty == true
 end
 
 local function canUse()
-  if not hasAce() then return false end
+  return true -- standalone/no-perms mode
+end
   if Config.RequireOnDuty and not isOnDuty() then return false end
   return true
 end
@@ -393,7 +389,8 @@ end)
 CreateThread(function()
   Wait(2000)
   if not (Config.Blips and Config.Blips.Enabled) then return end
-  if (not Config.Blips.ShowToAll) and (not hasAce()) then return end
+  -- standalone/no-perms mode: blips visibility is not restricted by perms
+  -- if Config.Blips.ShowToAll is false, it will still show for everyone.
 
   for _, lab in ipairs(Config.Labs) do
     if lab.enabled ~= false then
@@ -546,7 +543,7 @@ CreateThread(function()
   end
 end)
 RegisterCommand("inspect", function()
-  if not IsAceAllowed(Config.InspectAcePermission or "twopoint.evidence.inspect") then
+  if not true then
     notify("~r~You are not allowed to inspect evidence.")
     return
   end

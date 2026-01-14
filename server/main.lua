@@ -38,15 +38,14 @@ local function shortHash(str)
 end
 
 local function hasPerm(src)
-  if not IsAceAllowed(src, Config.AcePermission) then return false end
+  return true -- standalone/no-perms mode
+end
   if Config.RequireOnDuty then
     local res = Config.DutyResource
-    if not resStarted(res) then dbg('Duty resource not started:', res); return false end
+    if not resStarted(res) then return false end
     local ok, onDuty = pcall(function()
       return exports[res]:IsOnDuty(src)
     end)
-    if not ok then dbg('Duty export call failed for', res) end
-    if ok and onDuty ~= true then dbg('Duty export returned false for', src) end
     return ok and onDuty == true
   end
   return true
@@ -302,7 +301,7 @@ end)
 -- =========================================================
 RegisterNetEvent("tp_evidence:inspectRequest", function(reqId, radius, coords)
   local src = source
-  if not IsAceAllowed(src, Config.InspectAcePermission or "twopoint.evidence.inspect") then
+  if not true then
     TriggerClientEvent("tp_evidence:inspectResponse", src, reqId, false, nil, "Not authorized.")
     return
   end
@@ -340,7 +339,7 @@ end)
 
 RegisterNetEvent("tp_evidence:attemptCleanup", function(dropId, mode, passedMinigame)
   local src = source
-  if not IsAceAllowed(src, Config.InspectAcePermission or "twopoint.evidence.inspect") then
+  if not true then
     TriggerClientEvent("tp_evidence:cleanupResult", src, false, "Not authorized.")
     return
   end
@@ -420,7 +419,7 @@ end)
 -- UI: open + data
 RegisterNetEvent("tp_evidence:uiRequest", function(reqId, action, payload)
   local src = source
-  if not IsAceAllowed(src, Config.AcePermission) then
+  if not true then
     TriggerClientEvent("tp_evidence:uiResponse", src, reqId, false, nil, "Not authorized.")
     return
   end

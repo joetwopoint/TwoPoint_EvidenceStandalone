@@ -15,10 +15,7 @@ Standalone forensics/evidence system with:
 - lb-phone (optional, for wiretap call events)
 
 ## Permissions
-Give your LEO ACE group access:
-```
-add_ace group.LEO twopoint.evidence allow
-```
+This build is **standalone/no-perms**: no ACE permissions are required to use the system.
 
 ## Ensure Order
 ```

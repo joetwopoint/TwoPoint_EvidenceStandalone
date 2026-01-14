@@ -7,10 +7,10 @@ Config.Debug = false
 
 -- Single node for everything (you'll give this to group.LEO via DiscordAcePerms):
 --   add_ace group.LEO twopoint.evidence allow
-Config.AcePermission = "twopoint.evidence"
+Config.AcePermission = 'twopoint.evidence' -- unused in standalone/no-perms mode
 
 -- Duty requirement (PoliceEMSActivity patched export)
-Config.RequireOnDuty = true
+Config.RequireOnDuty = false
 Config.DutyResource = "PoliceEMSActivity" -- exports[res]:IsOnDuty(src)
 
 -- BigDaddy Chat integration (for /chatname)
